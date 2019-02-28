@@ -16,7 +16,6 @@ class ParaMultiplier {
 
     ParaMultiplier(double[][] a, double[][] b, double[][] c, Oblig2Precode.Mode mode) {
         this.c = c;
-        
         this.mode = mode;
 
         switch(mode) {
