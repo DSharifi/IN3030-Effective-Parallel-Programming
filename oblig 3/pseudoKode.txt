@@ -1,0 +1,15 @@
+dele opp tråder slik at de krysser av hvert sitt srgment av bytearray
+hver tråd finner sqrt(sqrt(n)) for å krysse ut opp til root(n)
+
+kryss ut med root(root(n)) deretter tell opp og hent dem
+kryss ut med root(n) i hvert sitt srgment, tell og hent.
+
+
+
+
+
+
+
+
+del ut faktorer, så faktoriser n*n
+sync og la main tråd faktorisere med synca faktorer for å se om siste er en faktor.
