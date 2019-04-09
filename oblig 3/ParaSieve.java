@@ -1,11 +1,9 @@
-import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.concurrent.CyclicBarrier;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.locks.ReentrantLock;
 
 
 class ParaSieve {
-    private int[] allPrimes;
+    private int[] primes;
     private byte[] byteArray;
     private int n;
     
@@ -14,7 +12,7 @@ class ParaSieve {
 
     private int primeCount;
 
-
+    private int lastFoundPrime;
     private int threads;
 
     private int cells;
@@ -37,11 +35,22 @@ class ParaSieve {
         byteArray = new byte[cells];
     }
 
-    public int[] findPrimes(int threads) {
+
+    void printPrimes() {
+        for (int i = 0; i < m; i++) {
+            if (isPrime(i))
+                System.out.println(i);
+        }
+    }
+
+    public int[] findPrimes(int threads) {      
         findFirstPrimes();
+
+        printPrimes();
+
+
         para(threads);
 
-        gatherPrimes();
 
         return primes;
     }
@@ -59,35 +68,6 @@ class ParaSieve {
 
 
     /**
-     * Thread safe method that return next primes in bulk size specified
-     */
-    // private int[] findNextPrimes(int size) {
-    //     int[] primes = new int[size];
-    //     if (lastFoundPrime = 0)
-    //         return primes;
-
-
-    //     lock.lock();
-        
-    //     lastFoundPrime = findNextPrime(lastFoundPrime + 2);
-    //     primes[0] = prime;
-        
-    //     if (lastFoundPrime!=0)
-    //         primeCount++;
-
-    //     for (int i = 1; i < size && lastFoundPrime != 0; i++) {
-    //         lastFoundPrime = findNextPrime(lastFoundPrime+2);
-    //         primes[i] = findNextPrime(lastFoundPrime);
-
-    //         if (lastFoundPrime!=0)
-    //             primeCount++;
-    //     }
-
-    //     lock.unlock();
-    //     return primes;
-    // }
-
-    /**
      * Finds all primes from 3 - m
      */
 
@@ -98,19 +78,21 @@ class ParaSieve {
         while (currentPrime != 0 && currentPrime <= mSqrt) {
             traverse(currentPrime);
             currentPrime = findNextPrime(currentPrime + 2);
-            primeCount++;
+            
         }
-        
+
         lastFoundPrime = currentPrime;
+        
     }
 
     void traverse(int p) {
-        for (int i = p * p; i < mSqrt; i += p * 2) {
+        for (int i = p * p; i < m; i += p * 2) {
             flip(i); 
         }
     }
 
     void flip(int i) {
+
         if (i % 2 == 0) {
             return;
         }
@@ -122,7 +104,7 @@ class ParaSieve {
     }
 
     int findNextPrime(int startAt) {
-        for (int i = startAt; i < n; i += 2) {
+        for (int i = startAt; i < m; i += 2) {
             if (isPrime(i)) {
                 return i;
             }
@@ -146,6 +128,8 @@ class ParaSieve {
         barrierMain = new CyclicBarrier(threads + 1);
         barrierThreads = new CyclicBarrier(threads);
 
+        this.primesNested = new int[threads][];
+
         // start threads
         // two loops ensure even partitioning
         for (int i = 0; i < remainder; i++, indice += partitionSize + 1) {
@@ -158,7 +142,7 @@ class ParaSieve {
 
 
         try {
-            barrier.await();
+            barrierMain.await();
         } catch (Exception e) {
             return;
         }
@@ -182,8 +166,7 @@ class ParaSieve {
     class Worker implements Runnable {
         // numbers in sieve to take care of
         final int start, end, id;
-        private int foundPrimes = 0;
-        int[] primes;
+        int[] localPrimes;
 
         Worker(int start, int end, int id) {
             this.start = start*16;
@@ -200,59 +183,85 @@ class ParaSieve {
 
 
         private void tick() {
-            int p = 3;
-            while (p < m) {
-                p = findNextPrime(p);
+            int p = findNextPrime(lastFoundPrime + 2);
+
+            while (p <= m && p!= 0) {
+                if (id == 0) {
+                    System.out.println("mellom\t" + p);
+                }
                 int start = this.start / p;
                 int end = this.end / p;
-
                 traverse(p, start, end);
+
+                p = findNextPrime(p + 2);
+
             }
         }
 
-        private void gather() {
+        private void gather() {    
             int count = 0;
-            
+                 
             // count primes
             for (int i = start; i < end; i++) {
                 if(isPrime(i)) 
                     count++;
-                
             }
 
             // gather them
-            primes = new int[prime];
+            localPrimes = new int[count];
+
             int j = 0;
             for (int i = start; i < end && j < count; i++) {
                 if(isPrime(i)) 
-                    primes[j++] = i;
-                
+                    localPrimes[j++] = i;
             }
+
+            primesNested[id] = localPrimes;
 
 
         }
 
         private void initialize() {
             primeCount = 0;
-
             for (int[] list : primesNested) {
                 primeCount += list.length;
             }
+
+            primes = new int[primeCount];
         }
 
         private void fillUp() {
-            int startIndex, endIndex;
+            int startIndex;
             if (id == 0) {
                 startIndex = 0;
-                endIndex = primes.length - 1;
             } else {
-                startIndex =
+                startIndex = primesNested[id-1].length;
             }
 
+            int k = 0, l = startIndex;
+            try {
+                for (int i = 0, j = startIndex; i < localPrimes.length; i++, j++) {
+                    System.out.println(primes);
+                    System.out.println(localPrimes);
 
-            for (int i = startIndex; i <= endIndex; i++) {
-                
+                    primes[j] = localPrimes[i];
+                    i++;j++;
+                    System.out.println("coolio");
+                }
+            } catch(NullPointerException e) {
+                System.out.println(k + "\t"+ l);
             }
+
+        }
+
+
+        int findNextPrime(int startAt) {
+            for (int i = startAt; i < m; i += 2) {
+                if (isPrime(i)) {
+                    return i;
+                }
+            }
+            return 0;
         }
 
 
@@ -262,7 +271,8 @@ class ParaSieve {
         public void run() {
             // traverse
             tick();
-            primesNested[id] = primes;
+            System.out.println("gather");
+            gather();
 
             try {
                 barrierThreads.await();
@@ -271,13 +281,14 @@ class ParaSieve {
 
             if (id == 0)
                 initialize();
+            System.out.println("init");
             
             try {
                 barrierThreads.await();
                 } catch(Exception e) {
                 }
-    
             
+            System.out.println("filling");        
             fillUp();
 
             try {
