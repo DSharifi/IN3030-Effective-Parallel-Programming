@@ -1,5 +1,6 @@
 import java.util.Arrays;
 import java.util.concurrent.CyclicBarrier;
+import java.util.concurrent.locks.ReentrantLock;
 
 
 class ParaSieve {
@@ -22,6 +23,8 @@ class ParaSieve {
 
     private int[][] primesNested;
 
+    private ReentrantLock l = new ReentrantLock();
+    private ReentrantLock lo = new ReentrantLock();
 
     
 
@@ -37,7 +40,7 @@ class ParaSieve {
 
 
     void printPrimes() {
-        for (int i = 0; i < m; i++) {
+        for (int i = 0; i <= m; i++) {
             if (isPrime(i))
                 System.out.println(i);
         }
@@ -45,18 +48,13 @@ class ParaSieve {
 
     public int[] findPrimes(int threads) {      
         findFirstPrimes();
-
-        printPrimes();
-
-
         para(threads);
-
-
+        primes[0] = 2;
         return primes;
     }
 
     boolean isPrime(int i) {
-        if ((i % 2) == 0) {
+        if ((i & 1) == 0) {
             return false;
         }
 
@@ -92,16 +90,16 @@ class ParaSieve {
     }
 
     void flip(int i) {
-
         if (i % 2 == 0) {
             return;
         }
-
+        
         int byteCell = i / 16;
         int bit = (i / 2) % 8;
 
         byteArray[byteCell] |= (1 << bit);
     }
+
 
     int findNextPrime(int startAt) {
         for (int i = startAt; i < m; i += 2) {
@@ -115,23 +113,29 @@ class ParaSieve {
 
 
     void para(int threads) {
-        int startByte = mSqrt / 16;
-        int endByte = cells - 1;
-        
-        int partitionSize = (endByte - startByte) / threads;
-        int remainder = (endByte - startByte)  % threads;
-
         this.threads = threads;
+        this.primesNested = new int[threads][];
 
-        int indice = 0;
+
+        int startByte = m / 16;        
+        int partitionSize = (cells - startByte) / threads;
+        int remainder = (cells - startByte)  % threads;
+
+
+        System.out.println("msqrt " + mSqrt);
+        System.out.println("startByte " + startByte);
+        
+        
+        
+        int indice = startByte;
 
         barrierMain = new CyclicBarrier(threads + 1);
         barrierThreads = new CyclicBarrier(threads);
+        
+        
 
-        this.primesNested = new int[threads][];
 
         // start threads
-        // two loops ensure even partitioning
         for (int i = 0; i < remainder; i++, indice += partitionSize + 1) {
             new Thread(new Worker(indice, indice + partitionSize + 1, i)).start();
         }
@@ -163,48 +167,107 @@ class ParaSieve {
 
 
 
+
     class Worker implements Runnable {
         // numbers in sieve to take care of
         final int start, end, id;
+        
         int[] localPrimes;
 
         Worker(int start, int end, int id) {
-            this.start = start*16;
-            this.end = end*16-1;
             this.id = id;
+            this.start = start*16 + 1;
+
+            if (id == threads - 1)
+                // last thread
+                this.end = ((n & 1) == 0) ? n+1 : n+2;
+            else
+                // all others        
+                this.end = end*16 + 1;
+
+            System.out.println(id + ":\t" + this.start + "\t" + this.end);
         }
 
 
-        void traverse(int p, int start, int end) {
-            for (int i = p * start; i < end; i += p * 2) {
-                flip(i); 
+        void traverse(int p, int startFactor, int endFactor) {
+            l.lock();
+            System.out.println("\n");
+            System.out.println("id:\t" + id);
+            System.out.println("prime:\t" + p);
+
+            System.out.println("startFactor:\t" + startFactor);
+            System.out.println("endFactor:\t" + endFactor);
+
+
+            for (int i = startFactor * p; i < this.end; i += p * 2) {
+                System.out.println("factor:\t" + i);
+
+                flip(i);
             }
+
+            System.out.println("\n");
+            l.unlock();
+
         }
 
+        void traversePartly() {
+            int startFactor, endFactor;
+            int currentPrime = 3;
 
-        private void tick() {
-            int p = findNextPrime(lastFoundPrime + 2);
+            int end = this.end;
+            startFactor = (this.start + currentPrime - 1) / currentPrime;
+            
+            // (this.start + this.start % currentPrime) / currentPrime;
+            startFactor = (currentPrime < startFactor) ? startFactor : currentPrime;
 
-            while (p <= m && p!= 0) {
-                if (id == 0) {
-                    System.out.println("mellom\t" + p);
-                }
-                int start = this.start / p;
-                int end = this.end / p;
-                traverse(p, start, end);
+            endFactor = (end- 2) / currentPrime;
 
-                p = findNextPrime(p + 2);
+            System.out.println(end);
+
+            if ((startFactor & 1) == 0)
+                startFactor++;
+
+            if ((endFactor & 1) == 0)
+                endFactor--;
+
+
+
+            while (currentPrime != 0 && currentPrime <= m && currentPrime*currentPrime <= this.end - 2) {
+                traverse(currentPrime, startFactor, endFactor);
+                
+                currentPrime = findNextPrime(currentPrime + 2);
+
+                if (currentPrime == 0)
+                    break;
+
+                // ceil division
+                startFactor = (this.start + currentPrime - 1) / currentPrime;
+                // might have to start lower
+                startFactor = (currentPrime < startFactor) ? startFactor : currentPrime;
+
+                endFactor = (end-2) / currentPrime;
+
+                if ((startFactor & 1) == 0)
+                    startFactor++;
+
+                if ((endFactor & 1) == 0)
+                    endFactor--;
 
             }
+
         }
 
         private void gather() {    
             int count = 0;
+            l.lock();  
                  
             // count primes
             for (int i = start; i < end; i++) {
-                if(isPrime(i)) 
+                if(isPrime(i)) {
+                    if (id == 0)
+                        System.out.println(i);
                     count++;
+                }
             }
 
             // gather them
@@ -217,7 +280,7 @@ class ParaSieve {
             }
 
             primesNested[id] = localPrimes;
-
+            l.unlock();
 
         }
 
@@ -238,19 +301,11 @@ class ParaSieve {
                 startIndex = primesNested[id-1].length;
             }
 
-            int k = 0, l = startIndex;
-            try {
-                for (int i = 0, j = startIndex; i < localPrimes.length; i++, j++) {
-                    System.out.println(primes);
-                    System.out.println(localPrimes);
-
-                    primes[j] = localPrimes[i];
-                    i++;j++;
-                    System.out.println("coolio");
-                }
-            } catch(NullPointerException e) {
-                System.out.println(k + "\t"+ l);
+            for (int i = 0, j = startIndex; i < localPrimes.length; i++, j++) {
+                primes[j] = localPrimes[i];
+                i++;j++;
             }
+    
 
         }
 
@@ -270,10 +325,11 @@ class ParaSieve {
         @Override
         public void run() {
             // traverse
-            tick();
-            System.out.println("gather");
+            traversePartly();
             gather();
+            System.out.println("Local primes:\t" + Arrays.toString(localPrimes));
 
+            System.out.println(Arrays.toString(localPrimes));
             try {
                 barrierThreads.await();
             } catch(Exception e) {

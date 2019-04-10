@@ -24,7 +24,12 @@ class newMain {
             ParaSieve sieve = new ParaSieve(n);
             int[] primes = sieve.findPrimes(threads);
 
-            System.out.println(Arrays.toString(primes));
+            SequentialSieve siv = new SequentialSieve(n);
+            int[] prim = siv.findPrimes();
+
+            System.out.println(assert_sieve(prim, primes));
+
+            // System.out.println(Arrays.toString(primes));
 
         } else if (mode == 1) {
             SequentialSieve sieve = new SequentialSieve(n);
@@ -36,7 +41,23 @@ class newMain {
             System.exit(1);
         }
 
-        precode.writeFactors();
+    }
+
+    private static boolean assert_sieve(int[] seq, int[] para) {
+        System.out.println(Arrays.toString(seq));
+        System.out.println(Arrays.toString(para));
+        System.out.println(seq.length == para.length);
+        if (seq.length != para.length)
+            return false;
+        
+        for (int i = 0; i < seq.length; i++) {
+            if (seq[i] != para[i])
+                return false;
+        }
+
+
+        return true;
+        
     }
 
 
