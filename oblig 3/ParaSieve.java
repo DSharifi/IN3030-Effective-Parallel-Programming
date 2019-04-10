@@ -190,23 +190,9 @@ class ParaSieve {
 
 
         void traverse(int p, int startFactor, int endFactor) {
-            l.lock();
-            System.out.println("\n");
-            System.out.println("id:\t" + id);
-            System.out.println("prime:\t" + p);
-
-            System.out.println("startFactor:\t" + startFactor);
-            System.out.println("endFactor:\t" + endFactor);
-
-
             for (int i = startFactor * p; i < this.end; i += p * 2) {
-                System.out.println("factor:\t" + i);
-
                 flip(i);
             }
-
-            System.out.println("\n");
-            l.unlock();
 
         }
 
@@ -259,13 +245,12 @@ class ParaSieve {
 
         private void gather() {    
             int count = 0;
-            l.lock();  
+            l.lock();
+            
                  
             // count primes
-            for (int i = start; i < end; i++) {
+            for (int i = (id == 0) ? 1 : start; i < end; i++) {
                 if(isPrime(i)) {
-                    if (id == 0)
-                        System.out.println(i);
                     count++;
                 }
             }
@@ -274,7 +259,7 @@ class ParaSieve {
             localPrimes = new int[count];
 
             int j = 0;
-            for (int i = start; i < end && j < count; i++) {
+            for (int i = (id == 0) ? 1 : start; i < end && j < count; i++) {
                 if(isPrime(i)) 
                     localPrimes[j++] = i;
             }
@@ -283,6 +268,8 @@ class ParaSieve {
             l.unlock();
 
         }
+
+
 
         private void initialize() {
             primeCount = 0;
@@ -294,18 +281,26 @@ class ParaSieve {
         }
 
         private void fillUp() {
-            int startIndex;
-            if (id == 0) {
-                startIndex = 0;
-            } else {
-                startIndex = primesNested[id-1].length;
+            l.lock();
+            int startIndex = 0;
+
+            if (id != 0) {
+                for (int i = 0; i < id; i++) {
+                    startIndex += primesNested[i].length;
+                }                    
             }
 
-            for (int i = 0, j = startIndex; i < localPrimes.length; i++, j++) {
-                primes[j] = localPrimes[i];
-                i++;j++;
+            System.out.println("ID:\t" + id);
+            System.out.println("startIndex:\t" + startIndex);
+            System.out.println("endINdex:\t" + (localPrimes.length + startIndex));
+
+            int j = startIndex;
+
+            for (int i = 0; i < localPrimes.length; i++) {
+                primes[j++] = localPrimes[i];
             }
-    
+
+            l.unlock();
 
         }
 
@@ -328,9 +323,7 @@ class ParaSieve {
             traversePartly();
             gather();
             System.out.println("Local primes:\t" + Arrays.toString(localPrimes));
-
-            System.out.println(Arrays.toString(localPrimes));
-            try {
+            try {   
                 barrierThreads.await();
             } catch(Exception e) {
             }
