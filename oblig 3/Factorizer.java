@@ -1,9 +1,6 @@
-import java.util.ArrayList;
-import java.util.Arrays;
-
 class Factorizer {
     static Oblig3Precode factorize(int[] primes, int n) {
-        long base = n*n;
+        long base = (long) n*n;
         Oblig3Precode output = new Oblig3Precode(n);
 
         for (long i = 0; i < 100; i++) {

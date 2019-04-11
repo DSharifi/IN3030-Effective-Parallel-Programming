@@ -1,6 +1,5 @@
 import java.util.Arrays;
 import java.util.concurrent.CyclicBarrier;
-import java.util.concurrent.locks.ReentrantLock;
 
 
 class ParaSieve {
@@ -23,8 +22,6 @@ class ParaSieve {
 
     private int[][] primesNested;
 
-    private ReentrantLock l = new ReentrantLock();
-    private ReentrantLock lo = new ReentrantLock();
 
     
 
@@ -33,6 +30,9 @@ class ParaSieve {
         this.n = n;
         this.m = (int) Math.sqrt(n);
         this.mSqrt = (int) Math.sqrt(m);
+
+        System.out.println(m);
+        System.out.println(mSqrt);
 
         cells = n / 16 + 1;
         byteArray = new byte[cells];
@@ -120,11 +120,6 @@ class ParaSieve {
         int startByte = m / 16;        
         int partitionSize = (cells - startByte) / threads;
         int remainder = (cells - startByte)  % threads;
-
-
-        System.out.println("msqrt " + mSqrt);
-        System.out.println("startByte " + startByte);
-        
         
         
         int indice = startByte;
@@ -171,7 +166,6 @@ class ParaSieve {
     class Worker implements Runnable {
         // numbers in sieve to take care of
         final int start, end, id;
-        
         int[] localPrimes;
 
         Worker(int start, int end, int id) {
@@ -184,8 +178,6 @@ class ParaSieve {
             else
                 // all others        
                 this.end = end*16 + 1;
-
-            System.out.println(id + ":\t" + this.start + "\t" + this.end);
         }
 
 
@@ -208,7 +200,6 @@ class ParaSieve {
 
             endFactor = (end- 2) / currentPrime;
 
-            System.out.println(end);
 
             if ((startFactor & 1) == 0)
                 startFactor++;
@@ -245,7 +236,6 @@ class ParaSieve {
 
         private void gather() {    
             int count = 0;
-            l.lock();
             
                  
             // count primes
@@ -265,7 +255,6 @@ class ParaSieve {
             }
 
             primesNested[id] = localPrimes;
-            l.unlock();
 
         }
 
@@ -281,7 +270,6 @@ class ParaSieve {
         }
 
         private void fillUp() {
-            l.lock();
             int startIndex = 0;
 
             if (id != 0) {
@@ -290,23 +278,17 @@ class ParaSieve {
                 }                    
             }
 
-            System.out.println("ID:\t" + id);
-            System.out.println("startIndex:\t" + startIndex);
-            System.out.println("endINdex:\t" + (localPrimes.length + startIndex));
-
             int j = startIndex;
 
             for (int i = 0; i < localPrimes.length; i++) {
                 primes[j++] = localPrimes[i];
             }
 
-            l.unlock();
-
         }
 
 
         int findNextPrime(int startAt) {
-            for (int i = startAt; i < m; i += 2) {
+            for (int i = startAt; i <= m; i += 2) {
                 if (isPrime(i)) {
                     return i;
                 }
@@ -322,7 +304,7 @@ class ParaSieve {
             // traverse
             traversePartly();
             gather();
-            System.out.println("Local primes:\t" + Arrays.toString(localPrimes));
+            // System.out.println("Local primes:\t" + Arrays.toString(localPrimes));
             try {   
                 barrierThreads.await();
             } catch(Exception e) {
@@ -330,14 +312,12 @@ class ParaSieve {
 
             if (id == 0)
                 initialize();
-            System.out.println("init");
             
             try {
                 barrierThreads.await();
                 } catch(Exception e) {
                 }
             
-            System.out.println("filling");        
             fillUp();
 
             try {
