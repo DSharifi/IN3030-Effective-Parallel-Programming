@@ -22,4 +22,4 @@ def run(file_path):
 
 
 if __name__ == '__main__':
-        run('Factors_1000.txt')
+        run('Factors_2000000000.txt')

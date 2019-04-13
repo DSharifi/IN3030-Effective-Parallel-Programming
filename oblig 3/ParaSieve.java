@@ -31,9 +31,6 @@ class ParaSieve {
         this.m = (int) Math.sqrt(n);
         this.mSqrt = (int) Math.sqrt(m);
 
-        System.out.println(m);
-        System.out.println(mSqrt);
-
         cells = n / 16 + 1;
         byteArray = new byte[cells];
     }

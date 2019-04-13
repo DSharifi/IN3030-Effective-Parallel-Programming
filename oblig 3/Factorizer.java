@@ -1,23 +1,30 @@
-class Factorizer {
-    static Oblig3Precode factorize(int[] primes, int n) {
-        long base = (long) n*n;
-        Oblig3Precode output = new Oblig3Precode(n);
+import java.util.ArrayList;
 
-        for (long i = 0; i < 100; i++) {
-            factorize_bases(primes, base-i, output);
+class Factorizer {
+    private static long[][] factors;
+
+    static long[][] factorize(int[] primes, int n) {
+        long base = (long) n*n;
+
+        long[][] factors = new long[100][];
+
+        for (int i = 0; i < 100; i++) {
+            factorize_bases(primes, base-i, factors, i);
         }
 
-        return output;
+        return factors;
     }
 
-    public static void factorize_bases(int[] primes, long base, Oblig3Precode output) {
+    private static void factorize_bases(int[] primes, long base, long[][] factors, int round) {
         int index = 0;
         long factor = base;
 
-        while (primes.length > index && primes[index] <= (int) (Math.sqrt(base)) + 1) {
+        ArrayList<Long> factorSet = new ArrayList<Long>();
+
+        while (primes.length > index && Math.pow(primes[index], 2) <= base) {
             if (factor % primes[index] == 0) {
-                output.addFactor(base, primes[index]);
                 factor = factor/primes[index];
+                factorSet.add((long) primes[index]);
             } else {
                 index++;
             }
@@ -25,7 +32,16 @@ class Factorizer {
 
         // las divided can also be a prime!
         if (factor != 1) {
-            output.addFactor(base, factor);
+            factorSet.add(factor);
         }
+
+        long[] factorA = new long[factorSet.size()];
+        int j = 0;
+
+        for (long i : factorSet) {
+            factorA[j++] = i;
+        }
+
+        factors[round] = factorA;
     }
 }

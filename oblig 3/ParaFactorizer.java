@@ -1,5 +1,4 @@
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.concurrent.CyclicBarrier;
 
 class ParaFactorizer {
@@ -9,12 +8,14 @@ class ParaFactorizer {
 
 
     // n --->  (threads ---> factors)
-    final HashMap<Long, ArrayList<ArrayList<Integer>>> nestedFactors;
+    final ArrayList<ArrayList<ArrayList<Integer>>> nestedFactors;
 
     // n ---> factors    
-    final HashMap<Long, ArrayList<Integer>> finalFactors;
+    final long[][] finalFactors;
 
-    final CyclicBarrier barrier;
+    final CyclicBarrier barrierThreads;
+    final CyclicBarrier barrierMain;
+    
 
 
     ParaFactorizer (int[] primes, int n, int threads) {
@@ -22,8 +23,8 @@ class ParaFactorizer {
         this.primes = primes;
         this.threads = threads;
 
-        this.nestedFactors = new HashMap<Long, ArrayList<ArrayList<Integer>>>(100);
-        this.finalFactors = new HashMap<Long, ArrayList<Integer>>(100);
+        this.nestedFactors = new ArrayList<ArrayList<ArrayList<Integer>>>(100);
+        this.finalFactors = new long[100][];
 
         for (int i = 0; i < 100; i++) {
             ArrayList<ArrayList<Integer>> threadFactors = new ArrayList<ArrayList<Integer>>(threads);
@@ -32,20 +33,20 @@ class ParaFactorizer {
                 threadFactors.add(new ArrayList<Integer>());
             }
 
-            nestedFactors.put(base - i, threadFactors);
-            finalFactors.put(base - i, new ArrayList<Integer>());
+            nestedFactors.add(threadFactors);
         }
 
-        barrier = new CyclicBarrier(threads + 1);
+        barrierMain = new CyclicBarrier(threads + 1);
+        barrierThreads = new CyclicBarrier(threads);
     }
 
-    HashMap<Long, ArrayList<Integer>> factorize() {
+    long[][] factorize() {
         for (int id = 0; id < threads; id++) {
             new Thread(new Worker(id)).start();
         }
 
         try {
-            barrier.await();
+            barrierMain.await();
         } catch(Exception e) {}
 
         return finalFactors;
@@ -53,7 +54,7 @@ class ParaFactorizer {
 
 
     class Worker implements Runnable {
-        int id;
+        final int id;
 
         Worker(int id) {
             this.id = id;
@@ -67,25 +68,29 @@ class ParaFactorizer {
             }
 
             try {
-                barrier.await();
+                barrierThreads.await();
             } catch (Exception e) {
             }
             // do cleanup
             cleanup();
+            try {
+                barrierMain.await();
+            } catch (Exception e) {
+            }
         }
 
 
-        // n ---> threads ---> factors
-        void factorize_partly(long currentBase) {
+        void factorize_partly(long n) {
             int index = id;
+            int nIndex = (int) (base - n);
 
             // factors sotred locally
-            ArrayList<Integer> localFactorsForN = nestedFactors.get(currentBase).get(id);
+            ArrayList<Integer> factors = nestedFactors.get(nIndex).get(id);
             
-            while (index < primes.length && Math.pow(primes[index], 2) <= currentBase) {
-                if (currentBase % primes[index] == 0) {;
-                    localFactorsForN.add(primes[index]);
-                    currentBase /= primes[index];
+            while (index < primes.length && Math.pow(primes[index], 2) <= n) {
+                if (n % primes[index] == 0) {;
+                    factors.add(primes[index]);
+                    n /= primes[index];
 
                 } else {
                     index += threads;
@@ -94,36 +99,44 @@ class ParaFactorizer {
 
         }
 
-
-
-
+        // n ---> threads ---> factors
         void cleanup() {
-            long key = base - id;
-            long limit = base - 100;
-
-            while (limit < key) {
-                ArrayList<ArrayList<Integer>> threadFactors = nestedFactors.get(key);
-                ArrayList<Integer> outputFactors = finalFactors.get(key);
-
-                // add factors
+            for (int index = id; index < nestedFactors.size(); index+=threads) {
+                
+                long[] factorSet;                
+                int size = 0;
                 long product = 1;
+                long n = base - index;
 
-                for (ArrayList<Integer> factorList : threadFactors) {
-                    for (Integer factor : factorList) {
-                        // System.out.println("Base:\t" + base + "\nFactor:\t" + factor);
-                        outputFactors.add(factor);
+
+                ArrayList<ArrayList<Integer>> factors = nestedFactors.get(index);
+                
+                for (ArrayList<Integer> factorList : factors) {
+                    size += factorList.size();
+                    for (int factor : factorList) {
                         product *= factor;
                     }
                 }
+                
+                if (product != n) {
+                    factorSet = new long[size + 1];
+                    factorSet[factorSet.length - 1] =  (n/product);
 
-                // last divided can also be a prime!
-                if (product != key) {
-                    // System.out.println("Base:\t" + base);
-                    // System.out.println("product:\t" + product);
-                    outputFactors.add((int) product);
+                } else {
+                    factorSet = new long[size];
                 }
 
-                key -= threads;
+                int i = 0;
+                for (ArrayList<Integer> factorList : factors) {
+                    for (int factor : factorList) {
+                        factorSet[i++] = factor;
+                    }
+                } 
+
+                finalFactors[index] = factorSet;
+                
+                // System.out.println("ID\t" + id + "\nn\t" + n + "\nindex\t" + index + "\nproduct\t" + j + "\n\n");
+
             }
 
         }
