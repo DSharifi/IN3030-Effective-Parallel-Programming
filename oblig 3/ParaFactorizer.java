@@ -1,4 +1,5 @@
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.concurrent.CyclicBarrier;
 
 class ParaFactorizer {
@@ -48,6 +49,7 @@ class ParaFactorizer {
         try {
             barrierMain.await();
         } catch(Exception e) {}
+
 
         return finalFactors;
     }
@@ -134,7 +136,9 @@ class ParaFactorizer {
                 } 
 
                 finalFactors[index] = factorSet;
-                
+
+                Arrays.sort(factorSet);
+
                 // System.out.println("ID\t" + id + "\nn\t" + n + "\nindex\t" + index + "\nproduct\t" + j + "\n\n");
 
             }

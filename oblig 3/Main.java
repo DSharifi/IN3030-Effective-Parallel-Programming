@@ -8,47 +8,68 @@ class Main {
 
 
     public static void main(String[] args) {
+        int arg1;
+        int arg2;
+        int arg3;
+
         try {
-            mode = Integer.parseInt(args[0]);
-            n = Integer.parseInt(args[1]);
+            arg1 = Integer.parseInt(args[0]);
+            arg2 = Integer.parseInt(args[1]);
 
         } catch(Exception e) {
             instructions();
+            return;
         }
 
-        if (n <= 0) {
-            System.out.println("N must be positive!");
-            instructions();
-        }
+        mode = arg1;
 
         if (mode == 0) {
+            // sequential
+            n = arg2;
+
+            if (n <= 0) {
+                System.out.println("N must be positive!");
+                instructions();
+            }
             sequential();
 
-
-        } else if(mode == 1 || mode == 2) {
-
-            try {
-                threads = Integer.parseInt(args[2]);
-                threads = (threads == 0) ? Runtime.getRuntime().availableProcessors() : threads;
-
-                if (threads > n / 16) {
-                    System.out.println("Core count too high!");
-                    instructions();
-                }
-
-            } catch (Exception e) {
-                System.out.println("Please specify thread count");
+        } else if (mode == 1) {
+            // parallel
+            n = arg2;
+            if (n <= 0) {
+                System.out.println("N must be positive!");
                 instructions();
             }
 
-            if (mode == 1)
-                prallel();
-            else
-                benchMarks();
-        }
+            try {
+                arg3 = Integer.parseInt(args[2]);
 
-        else {
-            System.out.println("Choose mode 0 or 1");
+            } catch (Exception e) {
+                System.out.println("Specify a core count!!");
+                instructions();
+                return;
+            }
+
+            if (arg3 < 0) {
+                System.out.println("Secify a positive core count!!!");
+                instructions();
+            }
+
+            
+            threads = (arg3 == 0) ? Runtime.getRuntime().availableProcessors() : arg3;
+            System.out.println(threads);
+            System.out.println(n);
+            sequential();
+
+
+
+        } else if (mode == 2) {
+            // benchmarking
+            threads = (arg2 == 0) ? Runtime.getRuntime().availableProcessors() : arg2;
+            benchMarks();
+
+        } else {
+            System.out.println("Choose a correct mode, either 0, 1 or 2.");
             instructions();
         }
     }
@@ -72,7 +93,7 @@ class Main {
     }
 
     private static void benchMarks() {
-        int[] numbers = { 2000000, 20000000, 200000000, 2000000000};
+        int[] numbers = {2000000, 20000000, 200000000, 2000000000};
         int[][] primesSeq = new int[4][];
         int[][] primesPara = new int[4][];
 
@@ -116,16 +137,19 @@ class Main {
         System.out.println("Timings: (all times are in ms)");
         System.out.println("Sieve:");
         for (int i = 0; i < 4; i++) {
-            System.out.println("n:\t" +numbers[i]);
+            System.out.println("n:" +numbers[i]);
             System.out.println("sequential:\t" + seqSieveTimings[i]);
             System.out.println("parallell:\t" + paraSieveTimings[i] +"\n");
+            System.out.println("Speedup:\t" + (seqSieveTimings[i] / paraSieveTimings[i]));
+
         }
 
         System.out.println("\nFactorization");
         for (int i = 0; i < 4; i++) {
             System.out.println("n:\t" + numbers[i]);
-            System.out.println("sequential:\t" + factorizationsSeq[i]);
-            System.out.println("parallell:\t" + factorizationsPara[i] + "\n");
+            System.out.println("sequential:\t" + seqFactorTiming[i]);
+            System.out.println("parallell:\t" + paraFactorTiming[i]);
+            System.out.println("Speedup:\t" + (seqFactorTiming[i] / paraFactorTiming[i]));
         }
 
     }
@@ -155,6 +179,7 @@ class Main {
         Arrays.sort(timesSeq);
         Arrays.sort(timesPara);
 
+        // store median
         seqTiming[round] = timesSeq[trials / 2];
         paraTiming[round] = timesPara[trials / 2];
     }
@@ -204,20 +229,28 @@ class Main {
     // instructions for the user.
     private static void instructions() {
         System.out.println("Please provide proper arguments!\n");
-        System.out.println("java main {mode} {n} {threads}\n");
+        System.out.println("java Main {mode} {n} {threads}\n");
         System.out.println("mode\n-[0]\tsequential\n-[1]\tparallel\n-[2]\benchmark\n");
-        System.out.println("n\nPositive integer. The program will find all primes <= n" +
+        System.out.println("n\nPositive integer. The program will find all primes <= n, " +
         "and prime factorize [n*n-99, n*n]\n");
         System.out.println("threads\nPositive integer. Can not be greater than n/16; Should only be provided if mode 1 is selected. Specifies the number of working threads" + 
-        "for parallel version. Choosing 0 will default to the number of cores on the machine");
+        " for parallel version. Choosing 0 will default to the number of cores on the machine");
+
+        System.out.println("Examples: ");
+        System.out.println("java Main 0 200\tSequential, n = 200");
+        System.out.println("java Main 1 200 4\tParallel, n = 200, threads = 4");
+        System.out.println("java Main 1 200 0\tParallel, n = 200, threads = {cores on machine}");
+        System.out.println("java Main 2 10\tBenchmarking, n = {2000000, 20000000, 200000000, 2000000000}, threads = 10");
 
         System.exit(-1);
     }
 
 
     private static boolean assertFactorization(long[][][] seq, long[][][] para) {
-        if (seq.length != para.length)
+        if (seq.length != para.length) {
+            System.out.println("not same length");   
             return false;
+        }
 
         // check content
         for (int i = 0; i < seq.length; i++) {
@@ -227,19 +260,25 @@ class Main {
                 if (seq[i][j].length != para[i][j].length)
                     return false;
                 for (int k = 0; k < seq[i][j].length; k++) {
-                    if (seq[i][j][k] != para[i][j][k])
+                    if (seq[i][j][k] != para[i][j][k]) {
+                        System.out.println(seq[i][j][k] != para[i][j][k]);
+                        System.out.println(seq[i][j][k]);
+                        System.out.println(para[i][j][k]);
                         return false;
+                    }
                 }
             }
         }
 
         // check calculation
         int round = 0;
-        int[] numbers = {2000000, 20000000, 200000000, 2000000000};
+        long[] numbers = {2000000, 20000000, 200000000, 2000000000};
 
         for (long[][] factorlist : seq) {
-            if (!assertCalculation(numbers[round] , factorlist))
+            if (!assertCalculation(numbers[round++], factorlist)) {
+                System.out.println("not same calculation");
                 return false;
+            }
         }
 
         return true;
@@ -254,8 +293,11 @@ class Main {
             for (long factor : factors) {
                 product *= factor;
             }
-            if (product != nn--)
+            if (product != nn--) {
+                System.out.println("failed on " + nn);
+                System.out.println(product);
                 return false;
+            }
         }
 
         return true;

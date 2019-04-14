@@ -1,7 +1,6 @@
 import java.util.ArrayList;
 
 class Factorizer {
-    private static long[][] factors;
 
     static long[][] factorize(int[] primes, int n) {
         long base = (long) n*n;
