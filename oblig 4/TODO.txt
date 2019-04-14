@@ -1,0 +1,1 @@
+Editor is behaving strange. Start over with 'new vs project'.
