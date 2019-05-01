@@ -1,5 +1,3 @@
-import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.concurrent.CyclicBarrier;
 
 class ParallelRadix {
@@ -44,7 +42,7 @@ class ParallelRadix {
     // taken from live code session
     public void sort() {
         for (int i = 0; i < threads; i++) {
-            new Thread(new Worker(i)).start();
+            new Thread(new Worker(i, a, b)).start();
         }
 
         try {
@@ -52,73 +50,63 @@ class ParallelRadix {
         } catch (Exception e) {
         }
 
-        // If the end result ends up in the b array, copy it to the a array
-        System.out.println(a);
-        System.out.println(b);
-
-        if ((bit.length & 1) != 0) {
-            System.arraycopy(a, 0, b, 0, a.length);
-        }
-
-        return;
     }
 
     class Worker implements Runnable {
         int id;
 
-        int[] bit;
-
         // part of a[] being owned
         int startIndex;
         int endIndex;
 
-        int max;
+        int[] a;
+        int[] b;
 
-        Worker(int id) {
+        Worker(int id, int[] a, int[] b) {
             this.id = id;
+
+            this.a = a;
+            this.b = b;
+
             partition();
 
-            System.out.println("id: " + id + "\nstart: " + startIndex + "\nendIndex: " + endIndex);
         }
+
 
         @Override
         public void run() {
-            // step A -- find max values in a[]
-            System.out.println("start max");
             setLocalMax();
-            System.out.println("max set");
             try {
                 threadBarrier.await();
             } catch (Exception e) {
             }
-
-            // it is faster to let all of them compute max and numbits than syncing an extra
-            // time.
             setGlobalMax();
 
-            // Much of this logic is taken from the sequential version published on github!
+            int n = a.length; // Length of array
+            int maxNumberBits = 2; // Number of bits needed for largest number (calculated later)
+            int numDigits; // How many different digits we use
+            int[] bit; // bit.length = Amount of different digits. bit[i] = digitlength of digit i
 
-            // Discover how many bits the max value needs
-            int numBits = 2;
 
-            while (max >= (1L << numBits))
-                numBits++;
+		    // Count how many bits needed for the largest number
+            while (max >= 1L << maxNumberBits)
+                maxNumberBits++;
 
-            // Calculate how many digits we need
-            int numDigits = Math.max(1, numBits / useBits);
+            // How many digits we work on
+            numDigits = Math.max(1, maxNumberBits / useBits);
             bit = new int[numDigits];
-            int rest = numBits % useBits;
+            int rest = maxNumberBits % useBits;
 
-            // Distribute the bits over the digits
+            // Divide the parts that we sort on equally.
             for (int i = 0; i < bit.length; i++) {
-                bit[i] = numBits / numDigits;
-
+                bit[i] = maxNumberBits / numDigits;
                 if (rest-- > 0)
                     bit[i]++;
             }
 
             int[] temp = a;
             int sum = 0; // Used for shifting to the digit we are working on in radixSort
+
 
             for (int i = 0; i < bit.length; i++) {
                 // Sorting on digit i.
@@ -129,16 +117,23 @@ class ParallelRadix {
                 a = b;
                 b = temp;
             }
-            
-            ParallelRadix.this.bit = this.bit;
+
+            if (id == 0 && (bit.length & 1) != 0) {
+                System.arraycopy(a, 0, b, 0, a.length);
+            }
 
             try {
                 mainBarrier.await();
             } catch (Exception e) {
+                //TODO: handle exception
             }
         }
 
 
+
+
+
+        
         void paraRadixSort(int[] a, int[] b, int maskLen, int shift) {
         
             // The size / mask of the digit we are interested in this turn
@@ -167,7 +162,6 @@ class ParallelRadix {
             } catch (Exception e) {
             }
 
-       
             if (id == 0) {
                 // STEP C - Calculate pointers for digits
                 int accumulated = 0;
@@ -177,7 +171,6 @@ class ParallelRadix {
                         accumulated += allcount[j][i];
                     }
                 }
-
             }
 
 
@@ -185,7 +178,6 @@ class ParallelRadix {
                 threadBarrier.await();
             } catch (Exception e) {
             }
-
 
             // STEP D - Move numbers into correct places
             for (int i = startIndex; i < endIndex; i++) {
@@ -204,7 +196,7 @@ class ParallelRadix {
                 if (val > localMax)
                     localMax = val;
             }
-
+            
             max = localMax;
         }
 

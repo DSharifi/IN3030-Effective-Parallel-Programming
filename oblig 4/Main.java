@@ -109,11 +109,14 @@ class Main {
 
 
     static void benchmark() {
-        int[] nValues = {10000, 100000, 1000000, 10000000, 100000000};
+        int[] nValues = {1000, 10000, 100000, 1000000, 10000000, 100000000};
 
         seqResults = new int[nValues.length][];
         
         double[] seqTiming = new double[nValues.length];
+
+        // assert sequential results;
+
         double[] paraTiming = new double[nValues.length];
         
         for (int i = 0; i < nValues.length; i++) {
@@ -125,7 +128,7 @@ class Main {
         System.out.println("All timings are in ms");
 
         for (int i = 0; i < nValues.length; i++) {
-            System.out.println("n: " + nValues);
+            System.out.println("n: " + nValues[i]);
             System.out.println("sequential:\t" + seqTiming[i]);
             System.out.println("parallel:\t" + paraTiming[i]);
             System.out.println("speedup:\t" + (seqTiming[i]/paraTiming[i]) + "\n");
