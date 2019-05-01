@@ -7,7 +7,7 @@ class Main {
     static int threads;
     
     static int trials = 9;
-    static int useBits = 2;
+    static int useBits = 7;
     
 
     // store results from sequential version to  correct results are given in
@@ -68,6 +68,7 @@ class Main {
     private static void sequential() {
         int[] arr = Oblig4Precode.generateArray(n, seed);
         SequentialRadix.sort(arr, useBits);
+        assertIncreasingOrder(arr);        
         Oblig4Precode.saveResults(Oblig4Precode.Algorithm.SEQ, seed, arr);
 
         
@@ -76,9 +77,12 @@ class Main {
     private static void parallel() {
         int[] arr = Oblig4Precode.generateArray(n, seed);
         new ParallelRadix(arr, threads, useBits).sort();
+        assertIncreasingOrder(arr);
         Oblig4Precode.saveResults(Oblig4Precode.Algorithm.PARA, seed, arr);
 
     }
+
+
 
 
     // instructions for the user.
@@ -115,12 +119,15 @@ class Main {
         
         double[] seqTiming = new double[nValues.length];
 
-        // assert sequential results;
 
         double[] paraTiming = new double[nValues.length];
         
         for (int i = 0; i < nValues.length; i++) {
             seqTiming[i] = seqTimer(nValues[i], i);
+            assertIncreasingOrder(seqResults[i]);
+        }
+
+        for (int i = 0; i < nValues.length; i++) {
             paraTiming[i] = paraTimer(nValues[i], i);
         }
 
@@ -152,6 +159,8 @@ class Main {
             // store result
             seqResults[round] = unsortedArray;
 
+            assertIncreasingOrder(unsortedArray);
+
         }
 
         // return median
@@ -178,12 +187,31 @@ class Main {
                 System.out.println("error: Sequential and Parallel algorithms are not outputting same results!");
                 System.exit(1);
             }
+
+            assertIncreasingOrder(unsortedArray);
         }
 
         // return median
         Arrays.sort(times);
         return times[trials / 2];
 
+    }
+
+
+    private static void assertIncreasingOrder(int[] arr) {
+        for (int j = 1; j < arr.length; j++) {
+            int current = arr[j];
+            int previous = arr[j-1];
+
+            if (!(previous <= current)) {
+                System.out.println("SORTED ARRAY IS IN NON INCREASING ORDER!");
+                System.out.println("Following indexes is non increasing:");
+                System.out.println("a[" + (j-1) + "]" + " = " + previous);
+                System.out.println("a[" + j + "]" + " = " + current);
+
+                System.exit(-1);
+            }
+        }
     }
 
 } 

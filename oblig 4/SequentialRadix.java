@@ -1,11 +1,7 @@
-import java.util.Arrays;
+// this code is taken from the live code session (as posted on github)
 
-/*
-    This is a working solution of sequential radix sort. Feel free to change it as you please
-    I may edit it later with better comments
-*/
 
-class SequentialRadix {
+public abstract class SequentialRadix {
 	static int DIGIT_BITS; // Used for calculating number of digits later
 
 	public static void sort(int[] a, int useBits) {

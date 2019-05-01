@@ -1,6 +1,6 @@
 import java.util.concurrent.CyclicBarrier;
 
-class ParallelRadix {
+public class ParallelRadix {
     int useBits;
     int[] a, b;
 
