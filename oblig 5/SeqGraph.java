@@ -67,8 +67,8 @@ class SeqGraph {
         
     }
 
-    private void findValues(IntList possibleValues, int point, int startPoint) {
-        int[] abc = lineEquation(point, startPoint);
+    private void findValues(IntList possibleValues, int p1, int p2) {
+        int[] abc = lineEquation(p1, p2);
 
         int a = abc[0];
         int b = abc[1];
@@ -114,8 +114,9 @@ class SeqGraph {
 
         j++;
         if (topLeft != -1) {
-            findValues(leftSide, topLeft, startPoint);
+            findValues(leftSide, topLeft, p2);
             envelope.add(topLeft);
+            findValues(leftSide, p1, p2);
 
         } else {
             envelope.append(onLine);
