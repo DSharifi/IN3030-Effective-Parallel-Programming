@@ -1,0 +1,3 @@
+https://www.uio.no/studier/emner/matnat/ifi/IN3030/v19/oblig/oblig5-v19-konveks-innhyllning.pdf
+https://www.uio.no/studier/emner/matnat/ifi/IN3030/v19/oblig/oblig-5-report-recommendations-v19.pdf
+https://github.uio.no/magnuesp/IN3030-v19/blob/master/precode/Oblig5/NPunkter17.java
