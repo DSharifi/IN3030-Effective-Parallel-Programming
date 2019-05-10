@@ -1,3 +1,7 @@
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Comparator;
+
 class SeqGraph {
     int[] x, y;
 
@@ -58,15 +62,15 @@ class SeqGraph {
 
     private void start() {
         setMaxAndMinX();
-
         // initialize with values left and right from p1 to p2;
         envelope.add(MAX_X);
         findValues(all, MIN_X, MAX_X);
-        // findValues(all, MAX_X, MIN_X);
-
-        
+        envelope.add(MIN_X);
+        findValues(all, MAX_X, MIN_X);
     }
 
+
+  
     private void findValues(IntList possibleValues, int p1, int p2) {
         int[] abc = lineEquation(p1, p2);
 
@@ -86,25 +90,24 @@ class SeqGraph {
         IntList onLine = new IntList();
         IntList leftSide = new IntList();
 
+        // System.out.println("Left of " + p1 + " --> " + p2);
+
         for (int i = 0; i < possibleValues.len; i++) {
         // find values on the     
             pos = possibleValues.get(i);
+
             x = this.x[pos];
             y = this.y[pos];
 
             d = a * x + b * y + c;
+
             
-
-            if (j == 0 && d < 0) {
-                System.out.println(i);
-            } 
-
-            if (d == 0)
+            if (d == 0 && i != p1 && i != p2)
                 onLine.add(i);
 
             else if (d > 0) {
                 // on left side
-                leftSide.add(i);
+                leftSide.add(possibleValues.get(i));
                 if (d > distance) {
                     distance = d;
                     topLeft = i;
@@ -112,13 +115,14 @@ class SeqGraph {
             }
         }
 
-        j++;
         if (topLeft != -1) {
-            findValues(leftSide, topLeft, p2);
+            findValues(possibleValues, topLeft, p2);
             envelope.add(topLeft);
-            findValues(leftSide, p1, p2);
+            findValues(possibleValues, p1, topLeft);
 
         } else {
+            // TODO: Sort the points on outer line
+            // sortLine(onLine, p2);
             envelope.append(onLine);
         }
 
@@ -126,110 +130,24 @@ class SeqGraph {
 
 
 
-    // private void findValues(int a, int b, int c, IntList possibleValues, IntList stack) {
-    //     // if still negative, val was never set;
-    //     topLeft = -1;
-    //     botRight = -1;
+    // private void sortLine(IntList line, int p2) {
+    //     int[] values = line.data;
+    //     Arrays.sort(values, 0, line.size(), ((int i, int j) -> (distanceToPoint(i, p2) - distanceToPoint(j, p2))));
+    // }
 
-    //     int d, x, y;
+    // private void test() {
 
-    //     // left and right distances;
-    //     int rD = 0;
-    //     int lD = 0;
-
-    //     for (int i = 0; i < this.x.length; i++) {
-    //         x = this.x[i];
-    //         y = this.y[i];
-
-    //         // relative distance
-    //         d = a * x + b * y + c;
-
-    //         if (d == 0)
-    //             onLine.add(i);
-
-    //         else if (d < 0) {
-    //             // on left side
-    //             leftSide.add(i);
-    //             if (d < lD) {
-    //                 lD = d;
-    //                 topLeft = i;
-
-    //             }
-
-    //         } else {
-    //             // on right side
-    //             rightSide.add(i);
-    //             if (d > rD) {
-    //                 rD = d;
-    //                 botRight = i;
-    //             }
-    //         }
-
-    //     }
+    //     Integer[] months = {new Integer(1)};
 
 
-    //     if (topLeft != -1) {
-    //         envelope.add(topLeft);
-    //         findValues(a, b, c, leftSide);
-    //     } else {
-    //         envelope.append(onLine);
-    //     }
 
-    //     envelope.add(MIN_X);
-
-    //     if (botRight != -1) {
-    //         envelope.add(MIN_X);
-    //         // reverse the line
-    //         findValues(-a, -b, -c, rightSide);
-    //     } else {
-    //         envelope.append(onLine);
-    //     }
-
-
+    //     Arrays.sort(months, 0, 1, (int a, int b) -> a - b);
 
     // }
 
-
-    // private void initialize(int a, int b, int c) {
-    //     // if still negative, val was never set;
-    //     topLeft = -1;
-    //     botRight = -1;
-
-    //     int d, x ,y;
-
-    //     // left and right distances;
-    //     int rD = 0;
-    //     int lD = 0;
-
-    //     for (int i = 0; i < this.x.length; i++) {
-    //         x = this.x[i];
-    //         y = this.y[i];
-
-    //         d = a*x+b*y+c;
-
-    //         if (d == 0)
-    //             onLine.add(i);
-
-    //         else if (d < 0) { 
-    //             // on left side
-    //             leftSide.add(i);
-    //             if (d < lD) {
-    //                 lD = d;
-    //                 topLeft = i;
-
-    //             }
-
-    //         } else {
-    //             // on right side
-    //             rightSide.add(i);
-    //             if (d > rD) {
-    //                 rD = d;
-    //                 botRight = i;
-    //             }
-    //         }
-
-    //     }
-    // }
+    private int distanceToPoint(int p1, int p2) {
+        return (int) (Math.pow(x[p1] - x[p2], 2) + Math.pow(y[p1] - y[p2], 2));
+    }
 
 
     private void setMaxAndMinX() {

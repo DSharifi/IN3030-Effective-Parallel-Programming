@@ -14,5 +14,20 @@ class Oblig5 {
         n = x.length;
 
         this.envelope = envelope;
-    }   
+    }
+    
+    
+    @Override
+    public String toString() {
+        String output = "";
+
+        for (int i = 0; i < envelope.size(); i++) {
+            output += envelope.get(i);
+            output += " --> ";
+        }
+
+        output += envelope.get(0);
+
+        return output;
+    }
 }

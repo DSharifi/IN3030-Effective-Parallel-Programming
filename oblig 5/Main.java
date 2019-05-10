@@ -1,5 +1,3 @@
-import java.util.Arrays;
-
 class Main {
     static int n;
     static int mode;
@@ -65,6 +63,8 @@ class Main {
         nPunkter.fyllArrayer(x, y);
 
         Oblig5 graph = SeqGraph.findConvexEnvelope(x, y, allPoints);
+
+        System.out.println(graph);
         
         // sett max data for plot
         setMAX(graph);
