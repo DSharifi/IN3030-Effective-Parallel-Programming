@@ -35,7 +35,7 @@ class Main {
 
         } else if (mode == 1) {
             // parallel
-
+            n = arg1;
             try {
                 arg2 = Integer.parseInt(args[2]);
             } catch (Exception e) {
@@ -81,8 +81,13 @@ class Main {
         IntList allPoints = nPunkter.lagIntList();
         nPunkter.fyllArrayer(x, y);
 
-        Oblig5 graph = SeqGraph.findConvexEnvelope(x, y, allPoints);
+        Oblig5 graph = ParaGraph.findConvexEnvelope(x, y, allPoints, threads);
+        // sett max data for plot
+        setMAX(graph);
+
+        // plot
         new TegnUt(graph, graph.envelope);
+        // new TegnUt(graph, graph.envelope);
     }
 
     // instructions for the user.

@@ -1,58 +1,87 @@
 import java.util.concurrent.CyclicBarrier;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.locks.ReentrantLock;
 
 class ParaGraph {
-    int[] x, y;
-    Oblig5 graph;
+    final int[] x, y;
+    final Oblig5 graph;
     
     final private int threads;
 
-    private CyclicBarrier threadBarrier;
-    private CyclicBarrier mainBarrier;
+    final private CyclicBarrier threadBarrier;
+    final private CyclicBarrier mainBarrier;
 
-    // index of min and max X
+    final private CyclicBarrier finalBarrier = new CyclicBarrier(2);
+
+    // indices. Used to make a rectangle
     int MIN_X;
     int MAX_X;
-
-    int[] local_MIN_X;
-    int[] local_MAX_X;
-
-    int[] localLeft;
-    int[] localRight;
-
     int topLeft;
     int topRight;
 
+    final int[] local_MIN_X;
+    final int[] local_MAX_X;
+
+    final int[] localLeft;
+    final int[] leftSideDistances;
+    
+    final int[] localRight;
+    final int[] rightSideDistances;
+
+
+
     // all values;
-    IntList all;
+    final IntList all;
 
 
     // ---
-    IntList leftSide = new IntList();
-    IntList rightSide = new IntList();
-    IntList onLine = new IntList();
+    final IntList leftSide = new IntList();
+    final IntList rightSide = new IntList();
+    final IntList onLine = new IntList();
 
-    IntList[] leftSides;
-    IntList[] rightSides;
-    IntList[] onLines;
+    final AtomicInteger activeThreads;
+
+    final IntList[] leftSides;
+    final IntList[] rightSides;
+    final IntList[] onLines;
     
     // path of envelope
-    IntList envelope;
+    final IntList envelope;
     
-    IntList leftEnvelope = new IntList();
-    IntList rightEnvelope = new IntList();
+    final IntList leftEnvelope = new IntList();
+    final IntList rightEnvelope = new IntList();
     
     private ParaGraph(int[] x, int[] y, IntList all, int threads) {
         this.x = x;
         this.y = y;
 
+        if (threads < 4) 
+            this.threads = 4;
+        else
+            this.threads = threads;
+
         this.envelope = new IntList();
         this.graph = new Oblig5(x, y, envelope);
         this.all = all;
 
-        this.threads = threads;
 
-        this.threadBarrier = new CyclicBarrier(threads);
-        this.mainBarrier = new CyclicBarrier(threads + 1);        
+        this.threadBarrier = new CyclicBarrier(this.threads);
+        this.mainBarrier = new CyclicBarrier(this.threads + 1);      
+
+        this.leftSides = new IntList[this.threads];
+        this.rightSides = new IntList[this.threads];
+        this.onLines = new IntList[this.threads];
+
+
+        this.localLeft = new int[this.threads];
+        this.leftSideDistances = new int[this.threads];
+        this.localRight = new int[this.threads];
+        this.rightSideDistances = new int[this.threads];
+        
+        this.local_MIN_X = new int[this.threads];
+        this.local_MAX_X = new int[this.threads];
+
+        activeThreads = new AtomicInteger(4);
     }
 
     public static Oblig5 findConvexEnvelope(int[] x, int[] y, IntList all, int threads) {
@@ -87,64 +116,47 @@ class ParaGraph {
 
     private void start() {
         // initialize with values left and right from p1 to p2;
-        envelope.add(MAX_X);
-        findValues(all, MIN_X, MAX_X);
-        envelope.add(MIN_X);
-        findValues(all, MAX_X, MIN_X);
-    }
+        Thread[] workers = new Thread[threads];
 
-    private void findValues(IntList possibleValues, int p1, int p2) {
-        int[] abc = lineEquation(p1, p2);
+        System.out.println("starting intier");
 
-        int a = abc[0];
-        int b = abc[1];
-        int c = abc[2];
-
-        // if still negative, val was never set;
-        int topLeft = -1;
-        int distance = 0;
-
-        // values for iteration
-        int pos;
-        int d, x, y;
-
-        IntList onLine = new IntList();
-        IntList leftSide = new IntList();
-
-        // System.out.println("Left of " + p1 + " --> " + p2);
-
-        for (int i = 0; i < possibleValues.len; i++) {
-            // find values on the
-            pos = possibleValues.get(i);
-
-            x = this.x[pos];
-            y = this.y[pos];
-
-            d = a * x + b * y + c;
-
-            if (d == 0 && i != p1 && i != p2)
-                onLine.add(i);
-
-            else if (d > 0) {
-                // on left side
-                leftSide.add(possibleValues.get(i));
-                if (d > distance) {
-                    distance = d;
-                    topLeft = i;
-                }
-            }
+        for (int i = 0; i < threads; i++) {
+            new Thread(new InitWorker(i)).start();
         }
 
-
-        if (topLeft != -1) {
-            findValues(possibleValues, topLeft, p2);
-            envelope.add(topLeft);
-            findValues(possibleValues, p1, topLeft);
-
-        } else {
-            envelope.append(onLine);
+        try {
+            mainBarrier.await();
+        } catch (Exception e) {
+            // TODO: handle exception
         }
 
+        Tree tree1 = new Tree(topLeft);
+        Tree tree2 = new Tree(topRight);
+
+        Thread thread1 = new Thread(new Worker(MAX_X, topLeft, leftSide, tree1, "r"));
+        Thread thread2 = new Thread(new Worker(topLeft, MIN_X, leftSide, tree1, "l"));
+        Thread thread3 = new Thread(new Worker(MIN_X, topRight, rightSide, tree2, "r"));
+        Thread thread4 = new Thread(new Worker(topRight, MAX_X, rightSide, tree2, "l"));
+
+        System.out.println("starting runners");
+
+        thread1.start();
+        thread2.start();
+        thread3.start();
+        thread4.start();
+
+        try {
+            finalBarrier.await();
+        } catch (Exception e) {
+            // TODO: handle exception
+        }
+
+        System.out.println("printing");
+
+        System.out.println(MAX_X);
+        tree1.printContent();
+        System.out.println(MIN_X);
+        tree2.printContent();
     }
 
     
@@ -181,17 +193,25 @@ class ParaGraph {
             } catch (Exception e) {
             }
 
-            findLocalPoints();
-            
+            findLocalPoints(MIN_X, MAX_X);
+
             try {
                 threadBarrier.await();
             } catch (Exception e) {
             }
 
-            int p1 = MIN_X;
-            int p2 = MAX_X;
+            if (id < 4) {
+                /**
+                 * 5 tasks depending on id;
+                 * 
+                 * 1 merge left side intlists 
+                 * 2 merge right side intlists
+                 * 3 merge online intlits
+                 * 4 set topLeft and botRight
+                 */
 
-            setPoints(p1, p2);
+                setPoints();
+            }
 
             try {
                 mainBarrier.await();
@@ -201,7 +221,9 @@ class ParaGraph {
 
 
 
-        private void setPoints(int p1, int p2) {
+
+
+        private void findLocalPoints(int p1, int p2) {
             int[] abc = lineEquation(p1, p2);
 
             int a = abc[0];
@@ -215,7 +237,6 @@ class ParaGraph {
             int botRight = -1;
             int botDistance = 0;
 
-
             // values for iteration
             int pos;
             int d, x, y;
@@ -226,7 +247,7 @@ class ParaGraph {
 
 
             // System.out.println("Left of " + p1 + " --> " + p2);
-            for (int i = 0; i < all.len; i++) {
+            for (int i = start; i < end; i++) {
                 // find values on the
                 pos = all.get(i);
 
@@ -245,33 +266,84 @@ class ParaGraph {
                         topDistance = d;
                         topLeft = i;
                     }
-                } else {
+                } else if (d < 0) {
                     rightSide.add(all.get(i));
-                    if (d > botDistance) {
+                    if (d < botDistance) {
                         botDistance = d;
                         botRight = i;
                     }
                 }
 
-                onLines[id] = onLine;
-                leftSides[id] = leftSide;
-                rightSides[id] = rightSide;
-
-                if (topLeft != -1)
-                    localLeft[id] = topLeft;
-                
-                if (botRight != -1)
-                    localRight[id] = botRight;
             }
 
 
+            System.out.println(botRight + "\t" + botDistance + "\n" + topLeft + "\t" + topDistance + "\n");
+
+            rightSideDistances[id] = botDistance;
+            leftSideDistances[id] = topDistance;
+
+            onLines[id] = onLine;
+            leftSides[id] = leftSide;
+            rightSides[id] = rightSide;
+
+            if (topLeft != -1)
+                localLeft[id] = topLeft;
+            
+            if (botRight != -1)
+                localRight[id] = botRight;
+        }
+
+
+
+
+        private void setPoints() {
+            if (id == 0) {
+                for (IntList left : leftSides) {
+                    leftSide.append(left);      
+                }
+            } else if (id == 1) {
+                for (IntList right : rightSides) {
+                    rightSide.append(right);
+                }
+            } else if (id == 2) {
+                for (IntList middle : onLines) {
+                    onLine.append(middle);
+                }
+            } else {
+                setGlobalRightLeft();
+            }
 
         }
 
-        private void findLocalPoints() {
+        private void setGlobalRightLeft() {
+            int right = localRight[0];
+            int left = localLeft[0];
+
+            int rightMax = rightSideDistances[0];
+            int leftMax = leftSideDistances[0];
+
+            int rightDistance, leftDistance;
+
+            for (int i = 0; i < localRight.length; i++) {
+                rightDistance = rightSideDistances[i];
+                leftDistance = leftSideDistances[i];
+
+                if (leftDistance > leftMax) {
+                    leftMax = leftDistance;
+                    left = localLeft[i];
+                }
+
+                if (rightDistance < rightMax) {
+                    rightMax = rightDistance;
+                    right = localRight[i];
+                }
+
+            }
+
+            topLeft = left;
+            topRight = right;
         }
-
-
+        
 
         private void findLocalMinMax() {
             int min = x[start];
@@ -306,4 +378,95 @@ class ParaGraph {
         }
     }
 
+    class Worker implements Runnable {
+        int id;
+        int p1, p2;
+
+        IntList possibleValues;
+        IntList newValues;
+        String path;
+
+        Tree localEnvelope;
+
+        public Worker(int p1, int p2, IntList possibleValues, Tree localEnvelope, String path) {
+            this.p1 = p1;
+            this.p2 = p2;
+
+            this.path = path;
+
+            this.possibleValues = possibleValues;
+            this.localEnvelope = localEnvelope;
+        }
+
+        @Override
+        public void run() {
+            recurse(p1, p2, possibleValues, path);
+            if (activeThreads.decrementAndGet() == 0)
+                try {
+                    finalBarrier.await();
+                } catch(Exception e){}
+        }
+
+        private void recurse(int p1, int p2, IntList possibleValues, String path) {
+            int[] abc = lineEquation(p1, p2);
+
+            int a = abc[0];
+            int b = abc[1];
+            int c = abc[2];
+
+            // if still negative, val was never set;
+            int topLeft = -1;
+            int distance = 0;
+
+            // values for iteration
+            int pos;
+            int d, x, y;
+
+            IntList onLine = new IntList();
+            IntList leftSide = new IntList();
+
+            // System.out.println("Left of " + p1 + " --> " + p2);
+
+            for (int i = 0; i < possibleValues.len; i++) {
+                // find values on the
+                pos = possibleValues.get(i);
+
+                x = ParaGraph.this.x[pos];
+                y = ParaGraph.this.y[pos];
+
+                d = a * x + b * y + c;
+
+                if (d == 0 && pos != p1 && pos != p2)
+                    onLine.add(pos);
+
+                else if (d > 0) {
+                    // on left side
+                    leftSide.add(pos);
+                    if (d > distance) {
+                        distance = d;
+                        topLeft = pos;
+                    }
+                }
+            }
+
+            if (topLeft != -1) {
+                localEnvelope.add(topLeft, path);
+
+                // let new thread do leftSide;
+                if(threads == activeThreads.getAndIncrement()) {
+                    new Thread(new Worker(p1, topLeft, leftSide, localEnvelope, path + "l")).start();
+                    activeThreads.decrementAndGet();
+                } else {
+                    activeThreads.decrementAndGet();
+                    recurse(p1, topLeft, leftSide, path + "l");
+                }
+                
+                // rightside
+                recurse(topLeft, p2, leftSide, path+"r");
+
+            } else {
+                localEnvelope.addLine(onLine, path);
+            }
+        }
+    }
 }

@@ -102,23 +102,23 @@ class SeqGraph {
             d = a * x + b * y + c;
 
             
-            if (d == 0 && i != p1 && i != p2)
-                onLine.add(i);
+            if (d == 0 && pos != p1 && pos != p2)
+                onLine.add(pos);
 
             else if (d > 0) {
                 // on left side
-                leftSide.add(possibleValues.get(i));
+                leftSide.add(pos);
                 if (d > distance) {
                     distance = d;
-                    topLeft = i;
+                    topLeft = pos;
                 }
             }
         }
 
         if (topLeft != -1) {
-            findValues(possibleValues, topLeft, p2);
+            findValues(leftSide, topLeft, p2);
             envelope.add(topLeft);
-            findValues(possibleValues, p1, topLeft);
+            findValues(leftSide, p1, topLeft);
 
         } else {
             // TODO: Sort the points on outer line
