@@ -133,10 +133,10 @@ class ParaGraph {
         Tree tree1 = new Tree(topLeft);
         Tree tree2 = new Tree(topRight);
 
-        Thread thread1 = new Thread(new Worker(MAX_X, topLeft, leftSide, tree1, "r"));
-        Thread thread2 = new Thread(new Worker(topLeft, MIN_X, leftSide, tree1, "l"));
-        Thread thread3 = new Thread(new Worker(MIN_X, topRight, rightSide, tree2, "r"));
-        Thread thread4 = new Thread(new Worker(topRight, MAX_X, rightSide, tree2, "l"));
+        Thread thread1 = new Thread(new Worker(topLeft, MAX_X, leftSide, tree1, "r"));
+        Thread thread2 = new Thread(new Worker(MIN_X, topLeft, leftSide, tree1, "l"));
+        Thread thread3 = new Thread(new Worker(topRight, MIN_X, rightSide, tree2, "r"));
+        Thread thread4 = new Thread(new Worker(MAX_X, topRight, rightSide, tree2, "l"));
 
         System.out.println("starting runners");
 
@@ -153,8 +153,10 @@ class ParaGraph {
 
         System.out.println("printing");
 
+        System.out.println("top tree");
         System.out.println(MAX_X);
         tree1.printContent();
+        System.out.println("\nbot tree");
         System.out.println(MIN_X);
         tree2.printContent();
     }

@@ -55,8 +55,8 @@ class Tree {
         // Node starter = new Node().
 
         for (int i = 0; i < data.len; i++) {
-            parent.left = new Node(data.get(i));
-            parent = parent.left;
+            parent.right = new Node(data.get(i));
+            parent = parent.right;
         }
     }
 
@@ -81,9 +81,9 @@ class Tree {
         if (node == null)
             return;
 
-        traversePrint(node.left);
-        System.out.println(node.data);
         traversePrint(node.right);
+        System.out.println(node.data);
+        traversePrint(node.left);
     }
 
 }
