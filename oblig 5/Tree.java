@@ -54,7 +54,7 @@ class Tree {
         // char direction = path.charAt(path.length() - 1);
         // Node starter = new Node().
 
-        for (int i = 0; i < data.len; i++) {
+        for (int i = data.len - 1; i >= 0; i--) {
             parent.right = new Node(data.get(i));
             parent = parent.right;
         }
@@ -84,6 +84,23 @@ class Tree {
         traversePrint(node.right);
         System.out.println(node.data);
         traversePrint(node.left);
+    }
+
+
+	public IntList toIntList() {
+        IntList val = new IntList();
+        toIntList(val, root);
+
+        return val;
+	}
+
+    private void toIntList(IntList val, Node node) {
+        if (node == null)
+            return;
+            
+        toIntList(val, node.right);
+        val.add(node.data);
+        toIntList(val, node.left);
     }
 
 }

@@ -122,30 +122,35 @@ class SeqGraph {
 
         } else {
             // TODO: Sort the points on outer line
-            // sortLine(onLine, p2);
+            sortLine(onLine, p2);
             envelope.append(onLine);
         }
 
     }
 
 
+    private Integer[] copy(IntList src) {
+        Integer[] val = new Integer[src.size()];
 
-    // private void sortLine(IntList line, int p2) {
-    //     int[] values = line.data;
-    //     Arrays.sort(values, 0, line.size(), ((int i, int j) -> (distanceToPoint(i, p2) - distanceToPoint(j, p2))));
-    // }
+        for (int i = 0; i < src.size(); i++) {
+            val[i] = src.data[i];
+        }
 
-    // private void test() {
-
-    //     Integer[] months = {new Integer(1)};
+        return val;
+    }
 
 
+    private void sortLine(IntList line, int p2) {
+        Integer[] val = copy(line);
+        Arrays.sort(val, 0, line.size(), ((Integer i, Integer j) -> (relativeDistanceBetweenPoints(i, p2) - relativeDistanceBetweenPoints(j, p2))));
 
-    //     Arrays.sort(months, 0, 1, (int a, int b) -> a - b);
+        for (int i = 0; i < val.length; i++) {
+            line.data[i] = val[i];
+        }
+    }
 
-    // }
 
-    private int distanceToPoint(int p1, int p2) {
+    private int relativeDistanceBetweenPoints(int p1, int p2) {
         return (int) (Math.pow(x[p1] - x[p2], 2) + Math.pow(y[p1] - y[p2], 2));
     }
 

@@ -38,6 +38,20 @@ class IntList{
 
 
 
+    @Override
+    public String toString() {
+        String output = "";
+
+        for (int i = 0; i < this.size(); i++) {
+            output += this.get(i);
+            output += " --> ";
+        }
+
+        // output += this.get(0);
+
+        return output;
+    }
+
 
 
     int get(int pos) {

@@ -1,3 +1,5 @@
+import java.util.Arrays;
+
 class Main {
     static int n;
     static int mode;
@@ -9,6 +11,12 @@ class Main {
     // store results from sequential version to correct results are given in
     // parallel version when benchmarking.
     static int[][] seqResults;
+
+
+    static int[] x;
+    static int[] y;
+
+    static IntList allpoints;
 
     public static void main(String[] args) {
         int arg0, arg1, arg2;
@@ -115,24 +123,28 @@ class Main {
     }
 
     static void benchmark() {
-        int[] x = new int[n];
-        int[] y = new int[n];
+
 
         int[] nValues = {100, 1000, 10000, 100000, 1000000, 10000000};
 
-        seqResults = new int[nValues.length][];
 
         double[] seqTiming = new double[nValues.length];
         double[] paraTiming = new double[nValues.length];
 
-        // for (int i = 0; i < nValues.length; i++) {
-        //     seqTiming[i] = seqTimer(nValues[i], i);
-        //     assertIncreasingOrder(seqResults[i]);
-        // }
+        for (int i = 0; i < nValues.length; i++) {
+            int n = nValues[i];
 
-        // for (int i = 0; i < nValues.length; i++) {
-        //     paraTiming[i] = paraTimer(nValues[i], i);
-        // }
+            x = new int[n];
+            y = new int[n];
+
+            NPunkter17 nPunkter = new NPunkter17(n);
+            allpoints = nPunkter.lagIntList();
+            nPunkter.fyllArrayer(x, y);
+
+            seqTiming[i] = seqTimer(nValues[i], i);
+            paraTiming[i] = paraTimer(nValues[i], i);
+        }
+
 
         System.out.println("All n values are executed " + trials + "times. The median times is the one displayed.");
         System.out.println("All timings are in ms");
@@ -158,46 +170,40 @@ class Main {
         graph.MAX_Y = MAX_Y;
     }
 
-    // static double seqTimer(int n, int round) {
-    //     double[] times = new double[trials];
+    static double seqTimer(int n, int round) {
+        double[] times = new double[trials];
 
-    //     for (int i = 0; i < trials; i++) {
-    //         int[] unsortedArray = Oblig4Precode.generateArray(n, seed);
-    //         long startTime = System.nanoTime();
-    //         SequentialRadix.sort(unsortedArray, useBits);
-    //         double time = (System.nanoTime() - startTime) / 1000000.0;
+        for (int i = 0; i < trials; i++) {
+            long startTime = System.nanoTime();
+            SeqGraph.findConvexEnvelope(x, y, allpoints);
+            double time = (System.nanoTime() - startTime) / 1000000.0;
 
-    //         times[i] = time;
+            times[i] = time;
 
-    //         // store result
-    //         seqResults[round] = unsortedArray;
+        }
 
-    //     }
+        // return median
+        Arrays.sort(times);
 
-    //     // return median
-    //     Arrays.sort(times);
+        return times[trials / 2];
 
-    //     return times[trials / 2];
+    }
 
-    // }
+    static double paraTimer(int n, int round) {
+        double[] times = new double[trials];
 
-    // static double paraTimer(int n, int round) {
-    //     double[] times = new double[trials];
+        for (int i = 0; i < trials; i++) {
+            long startTime = System.nanoTime();
+            ParaGraph.findConvexEnvelope(x, y, allpoints, threads);
+            double time = (System.nanoTime() - startTime) / 1000000.0;
+            times[i] = time;
 
-    //     for (int i = 0; i < trials; i++) {
-    //         int[] unsortedArray = Oblig4Precode.generateArray(n, seed);
-    //         long startTime = System.nanoTime();
-    //         new ParallelRadix(unsortedArray, threads, useBits).sort();
-    //         double time = (System.nanoTime() - startTime) / 1000000.0;
+        }
 
-    //         times[i] = time;
+        // return median
+        Arrays.sort(times);
+        return times[trials / 2];
 
-    //     }
-
-    //     // return median
-    //     Arrays.sort(times);
-    //     return times[trials / 2];
-
-    // }
+    }
 
 }

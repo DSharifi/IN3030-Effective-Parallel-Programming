@@ -1,6 +1,6 @@
+import java.util.Arrays;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.locks.ReentrantLock;
 
 class ParaGraph {
     final int[] x, y;
@@ -90,10 +90,6 @@ class ParaGraph {
 
         paraSolver.graph.MAX_X = paraSolver.MAX_X;
 
-        try {
-            paraSolver.mainBarrier.await();
-        } catch(Exception e) {}
-
         return paraSolver.graph;
     }
 
@@ -116,9 +112,8 @@ class ParaGraph {
 
     private void start() {
         // initialize with values left and right from p1 to p2;
-        Thread[] workers = new Thread[threads];
 
-        System.out.println("starting intier");
+        // System.out.println("starting intier");
 
         for (int i = 0; i < threads; i++) {
             new Thread(new InitWorker(i)).start();
@@ -138,7 +133,7 @@ class ParaGraph {
         Thread thread3 = new Thread(new Worker(topRight, MIN_X, rightSide, tree2, "r"));
         Thread thread4 = new Thread(new Worker(MAX_X, topRight, rightSide, tree2, "l"));
 
-        System.out.println("starting runners");
+        // System.out.println("starting runners");
 
         thread1.start();
         thread2.start();
@@ -151,14 +146,52 @@ class ParaGraph {
             // TODO: handle exception
         }
 
-        System.out.println("printing");
+        // System.out.println("printing");
 
-        System.out.println("top tree");
-        System.out.println(MAX_X);
-        tree1.printContent();
-        System.out.println("\nbot tree");
-        System.out.println(MIN_X);
-        tree2.printContent();
+        // System.out.println("top tree");
+        // System.out.println(MAX_X);
+        // tree1.printContent();
+        // System.out.println("\nbot tree");
+        // System.out.println(MIN_X);
+        // tree2.printContent();
+
+        IntList topEnvelope = tree1.toIntList();
+        IntList botEnvelope = tree2.toIntList();
+
+        envelope.add(MAX_X);
+        envelope.append(topEnvelope);
+        envelope.add(MIN_X);
+        envelope.append(botEnvelope);
+
+        // System.out.println("Top:\n" + topEnvelope);
+        // System.out.println("Bot:\n" + botEnvelope);
+        // System.out.println(envelope);
+
+    }
+
+
+    private Integer[] copy(IntList src) {
+        Integer[] val = new Integer[src.size()];
+
+        for (int i = 0; i < src.size(); i++) {
+            val[i] = src.data[i];
+        }
+
+        return val;
+    }
+
+    private void sortLine(IntList line, int p) {
+        Integer[] val = copy(line);
+        Arrays.sort(val, 0, line.size(), ((Integer i,
+                Integer j) -> (relativeDistanceBetweenPoints(i, p) - relativeDistanceBetweenPoints(j, p))));
+
+        for (int i = 0; i < val.length; i++) {
+            line.data[i] = val[i];
+        }
+    }
+
+    private int relativeDistanceBetweenPoints(int p1, int p2) {
+        return (int) (Math.pow(x[p1] - x[p2], 2) + Math.pow(y[p1] - y[p2], 2));
     }
 
     
@@ -277,9 +310,6 @@ class ParaGraph {
                 }
 
             }
-
-
-            System.out.println(botRight + "\t" + botDistance + "\n" + topLeft + "\t" + topDistance + "\n");
 
             rightSideDistances[id] = botDistance;
             leftSideDistances[id] = topDistance;
@@ -467,8 +497,10 @@ class ParaGraph {
                 recurse(topLeft, p2, leftSide, path+"r");
 
             } else {
+                sortLine(onLine, p2);
                 localEnvelope.addLine(onLine, path);
             }
         }
     }
+
 }
