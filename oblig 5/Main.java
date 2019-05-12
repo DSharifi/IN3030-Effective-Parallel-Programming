@@ -101,23 +101,23 @@ class Main {
     // instructions for the user.
     private static void instructions() {
         System.out.println("Please provide proper arguments!\n");
-        System.out.println("java Main {mode} {seed}..{ }..{ }..\n");
+        System.out.println("java Main {mode} { }..{ }..\n");
         System.out.println("mode\n-[0]\tsequential\n-[1]\tparallel\n-[2]\tbenchmark\n");
 
         // mode 0 (sequential)
-        System.out.println("Sequential Radix Sort:");
-        System.out.println("java Main 0 {seed} {n}\n");
+        System.out.println("Sequential algorithm:");
+        System.out.println("java Main 0 {n}\n");
 
         // mode 1 (parallel)
-        System.out.println("Parallel Radix Sort:");
-        System.out.println("java Main 1 {seed} {n} {threads}\n");
+        System.out.println("Parallel algorithm:");
+        System.out.println("java Main 1 {n} {threads}\n");
 
         // mode 2 (benchmarking)
         System.out.println("Benchmarking (Sequential vs Parallel):");
-        System.out.println("java Main 2 {seed} {threads}\n\n");
+        System.out.println("java Main 2 {threads}\n\n");
 
         // additinal information
-        System.out.println("{seed}, {n} and {threads} must all be positive integers!");
+        System.out.println("{n} and {threads} must all be positive integers!");
 
         System.exit(1);
     }
@@ -126,7 +126,6 @@ class Main {
 
 
         int[] nValues = {100, 1000, 10000, 100000, 1000000, 10000000};
-
 
         double[] seqTiming = new double[nValues.length];
         double[] paraTiming = new double[nValues.length];
