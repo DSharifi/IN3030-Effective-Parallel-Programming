@@ -49,7 +49,7 @@ class Tree {
         if (data.size() == 0)
             return;
 
-        Node parent = getParent(path);
+        Node parent = getParent(path.substring(0, path.length() - 0));
         
         // char direction = path.charAt(path.length() - 1);
         // Node starter = new Node().

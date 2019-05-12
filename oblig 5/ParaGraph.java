@@ -485,20 +485,19 @@ class ParaGraph {
                 localEnvelope.add(topLeft, path);
 
                 // let new thread do leftSide;
-                if(threads == activeThreads.getAndIncrement()) {
-                    new Thread(new Worker(p1, topLeft, leftSide, localEnvelope, path + "l")).start();
-                    activeThreads.decrementAndGet();
+                if(threads > activeThreads.getAndIncrement()) {
+                    new Thread(new Worker(p1, topLeft, leftSide, localEnvelope, path + 'l')).start();
                 } else {
                     activeThreads.decrementAndGet();
-                    recurse(p1, topLeft, leftSide, path + "l");
+                    recurse(p1, topLeft, leftSide, path + 'l');
                 }
                 
                 // rightside
-                recurse(topLeft, p2, leftSide, path+"r");
+                recurse(topLeft, p2, leftSide, path+'r');
 
             } else {
-                sortLine(onLine, p2);
-                localEnvelope.addLine(onLine, path);
+                // sortLine(onLine, p2);
+                // localEnvelope.addLine(onLine, path);
             }
         }
     }
