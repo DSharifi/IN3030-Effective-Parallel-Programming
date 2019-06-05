@@ -1,6 +1,4 @@
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Comparator;
 
 class SeqGraph {
     int[] x, y;
@@ -121,7 +119,6 @@ class SeqGraph {
             findValues(leftSide, p1, topLeft);
 
         } else {
-            // TODO: Sort the points on outer line
             sortLine(onLine, p2);
             envelope.append(onLine);
         }
